@@ -1,0 +1,204 @@
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+enum Perfil {
+    ADMINISTRADOR,
+    GERENTE,
+    COLABORADOR
+}
+
+class Usuario {
+    private String nome;
+    private String cpf;
+    private String email;
+    private Perfil perfil;
+
+    public Usuario(String nome, String cpf, String email, Perfil perfil) {
+        this.nome = nome;
+        this.cpf = cpf;
+        this.email = email;
+        this.perfil = perfil;
+    }
+
+    public String getNome() { return nome; }
+    public String getCpf() { return cpf; }
+    public Perfil getPerfil() { return perfil; }
+}
+
+class Equipe {
+    private String nome;
+    private String descricao;
+    private List<Usuario> membros;
+
+    public Equipe(String nome, String descricao) {
+        this.nome = nome;
+        this.descricao = descricao;
+        this.membros = new ArrayList<>();
+    }
+
+    public void adicionarMembro(Usuario usuario) {
+        if(!membros.contains(usuario)) membros.add(usuario);
+    }
+
+    public String getNome() { return nome; }
+    public List<Usuario> getMembros() { return membros; }
+}
+
+class Projeto {
+    private String nome;
+    private String status;
+    private List<Equipe> equipes;
+
+    public Projeto(String nome, String status) {
+        this.nome = nome;
+        this.status = status;
+        this.equipes = new ArrayList<>();
+    }
+
+    public void adicionarEquipe(Equipe e) {
+        if(!equipes.contains(e)) equipes.add(e);
+    }
+
+    public String getNome() { return nome; }
+    public String getStatus() { return status; }
+    public List<Equipe> getEquipes() { return equipes; }
+}
+
+class SistemaService {
+    private List<Usuario> usuarios = new ArrayList<>();
+    private List<Projeto> projetos = new ArrayList<>();
+    private List<Equipe> equipes = new ArrayList<>();
+
+    public boolean cadastrarUsuario(Usuario u) {
+        for(Usuario user : usuarios) {
+            if(user.getCpf().equals(u.getCpf())) return false;
+        }
+        usuarios.add(u);
+        return true;
+    }
+
+    public void cadastrarProjeto(Projeto p) { projetos.add(p); }
+    public void cadastrarEquipe(Equipe e) { equipes.add(e); }
+
+    public List<Usuario> listarUsuarios() { return usuarios; }
+    public List<Projeto> listarProjetos() { return projetos; }
+    public List<Equipe> listarEquipes() { return equipes; }
+}
+
+class ConsoleView {
+    private SistemaService service;
+    private Scanner scanner = new Scanner(System.in);
+
+    public ConsoleView(SistemaService service) { this.service = service; }
+
+    public void iniciar() {
+        int opc;
+        do {
+            System.out.println("\n=== Sistema de Gestão de Projetos ===");
+            System.out.println("1. Cadastrar Usuário");
+            System.out.println("2. Cadastrar Projeto");
+            System.out.println("3. Cadastrar Equipe");
+            System.out.println("4. Atribuir Equipe a Projeto");
+            System.out.println("5. Listar Usuários");
+            System.out.println("6. Listar Projetos");
+            System.out.println("7. Listar Equipes");
+            System.out.println("8. Relatório de Projetos");
+            System.out.println("0. Sair");
+            System.out.print("Escolha uma opção: ");
+            opc = Integer.parseInt(scanner.nextLine());
+
+            switch(opc) {
+                case 1: cadastrarUsuario(); break;
+                case 2: cadastrarProjeto(); break;
+                case 3: cadastrarEquipe(); break;
+                case 4: atribuirEquipeProjeto(); break;
+                case 5: listarUsuarios(); break;
+                case 6: listarProjetos(); break;
+                case 7: listarEquipes(); break;
+                case 8: relatorioProjetos(); break;
+                case 0: System.out.println("Saindo..."); break;
+                default: System.out.println("Opção inválida!");
+            }
+        } while(opc != 0);
+    }
+
+    private void cadastrarUsuario() {
+        System.out.print("Nome: ");
+        String nome = scanner.nextLine();
+        System.out.print("CPF: ");
+        String cpf = scanner.nextLine();
+        System.out.print("Email: ");
+        String email = scanner.nextLine();
+        Usuario u = new Usuario(nome, cpf, email, Perfil.COLABORADOR);
+        if(service.cadastrarUsuario(u)) System.out.println("Usuário cadastrado!");
+        else System.out.println("CPF já cadastrado!");
+    }
+
+    private void cadastrarProjeto() {
+        System.out.print("Nome do Projeto: ");
+        String nome = scanner.nextLine();
+        Projeto p = new Projeto(nome, "Planejado");
+        service.cadastrarProjeto(p);
+        System.out.println("Projeto cadastrado!");
+    }
+
+    private void cadastrarEquipe() {
+        System.out.print("Nome da Equipe: ");
+        String nome = scanner.nextLine();
+        Equipe e = new Equipe(nome, "Descrição");
+        service.cadastrarEquipe(e);
+        System.out.println("Equipe cadastrada!");
+    }
+
+    private void atribuirEquipeProjeto() {
+        System.out.print("Nome do Projeto: ");
+        String pNome = scanner.nextLine();
+        Projeto projeto = service.listarProjetos().stream()
+                .filter(p -> p.getNome().equalsIgnoreCase(pNome)).findFirst().orElse(null);
+        if(projeto == null) { System.out.println("Projeto não encontrado!"); return; }
+
+        System.out.print("Nome da Equipe: ");
+        String eNome = scanner.nextLine();
+        Equipe equipe = service.listarEquipes().stream()
+                .filter(e -> e.getNome().equalsIgnoreCase(eNome)).findFirst().orElse(null);
+        if(equipe == null) { System.out.println("Equipe não encontrada!"); return; }
+
+        projeto.adicionarEquipe(equipe);
+        System.out.println("Equipe atribuída ao projeto!");
+    }
+
+    private void listarUsuarios() { 
+        for(Usuario u : service.listarUsuarios()) 
+            System.out.println(u.getNome() + " - " + u.getPerfil()); 
+    }
+    private void listarProjetos() { 
+        for(Projeto p : service.listarProjetos()) 
+            System.out.println(p.getNome() + " - Status: " + p.getStatus()); 
+    }
+    private void listarEquipes() {
+        for(Equipe e : service.listarEquipes()) {
+            System.out.print(e.getNome() + " - Membros: ");
+            e.getMembros().forEach(m -> System.out.print(m.getNome() + ", "));
+            System.out.println();
+        }
+    }
+
+    private void relatorioProjetos() {
+        System.out.println("\n=== Relatório de Projetos ===");
+        for(Projeto p : service.listarProjetos()) {
+            System.out.println("Projeto: " + p.getNome() + " | Status: " + p.getStatus());
+            System.out.println("Equipes atribuídas:");
+            for(Equipe e : p.getEquipes()) System.out.println(" - " + e.getNome());
+            System.out.println();
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        SistemaService service = new SistemaService();
+        ConsoleView view = new ConsoleView(service);
+        view.iniciar();
+    }
+}
